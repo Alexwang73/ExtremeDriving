@@ -11,8 +11,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
+
 
 public class RoadPanel extends JPanel implements ActionListener, KeyListener {
+    private Font eightBit;
+    private Font eightBitLarge;
+    private Font eightBitSmall;
+
+
     private static final int NUM_SEGMENTS = 25;
     private static final double ROAD_WIDTH = 600;
     private static final double MIN_CAR_DISTANCE = 3.0;
@@ -68,6 +76,17 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     private boolean dPressed = false;
 
     public RoadPanel() {
+        try{
+            eightBit = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(24f);
+            eightBitLarge = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(50f);
+            eightBitSmall = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(18f);
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(eightBit);
+            ge.registerFont(eightBitLarge);
+            ge.registerFont(eightBitSmall);
+        } catch (IOException | FontFormatException e){
+            e.printStackTrace();
+        }
         Timer timer = new Timer(16, this);
         timer.start();
 
@@ -245,32 +264,31 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             g2d.fillRect(0, 0, width, height);
 
             g2d.setColor(Color.RED);
-            g2d.setFont(new Font("Arial", Font.BOLD, 48));
+            g2d.setFont(eightBitLarge);
             String gameOverText = "GAME OVER!";
             FontMetrics fm = g2d.getFontMetrics();
             int textWidth = fm.stringWidth(gameOverText);
             g2d.drawString(gameOverText, (width - textWidth) / 2, height / 2 - 50);
 
             g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 24));
+            g2d.setFont(eightBit);
             String collisionText = "Too many collisions: " + collisionCount + "/" + MAX_COLLISIONS;
             fm = g2d.getFontMetrics();
             textWidth = fm.stringWidth(collisionText);
             g2d.drawString(collisionText, (width - textWidth) / 2, height / 2);
 
             String restartText = "Press R to restart";
-
             fm = g2d.getFontMetrics();
             textWidth = fm.stringWidth(restartText);
             g2d.drawString(restartText, (width - textWidth) / 2, height / 2 + 50);
-
             return;
         }
+
 
         // Show collision warning
         if (showCollisionWarning && warningTimer > 0) {
             g2d.setColor(Color.RED);
-            g2d.setFont(new Font("Arial", Font.BOLD, 24));
+            g2d.setFont(eightBitLarge);
             String warningText = "COLLISION!";
             FontMetrics fm = g2d.getFontMetrics();
             int textWidth = fm.stringWidth(warningText);
@@ -283,7 +301,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
         // Show game stats
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.setFont(eightBitSmall);
         g2d.drawString("Speed: " + String.format("%.2f", speed), 10, 30);
         g2d.drawString("Collisions: " + collisionCount + "/" + MAX_COLLISIONS, 10, 50);
         g2d.drawString("W: Speed Up, S: Slow Down", 10, 70);
