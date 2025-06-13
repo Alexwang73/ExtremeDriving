@@ -11,8 +11,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.awt.FontFormatException;
+import java.awt.GraphicsEnvironment;
 
 public class RoadPanel extends JPanel implements ActionListener, KeyListener {
+
+    private Font eightBit;
+    private Font eightBitLarge;
+    private Font eightBitSmall;
+
     private static final int NUM_SEGMENTS = 25;
     private static final double ROAD_WIDTH = 600;
     private static final double MIN_CAR_DISTANCE = 3.0;
@@ -109,6 +116,18 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             npc2img = ImageIO.read(new File("src/npc2.png"));
         } catch (IOException e) {
             System.out.println(e.getMessage());
+        }
+
+        try{
+            eightBit = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(24f);
+            eightBitLarge = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(50f);
+            eightBitSmall = Font.createFont(Font.TRUETYPE_FONT,new File("src/pixel-emulator.ttf")).deriveFont(18f);
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(eightBit);
+            ge.registerFont(eightBitLarge);
+            ge.registerFont(eightBitSmall);
+        } catch (IOException | FontFormatException e){
+            e.printStackTrace();
         }
 
         playerCar = new Car(car, 290, 465, 0);
@@ -208,7 +227,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         JPanel titlePanel = new JPanel(new GridBagLayout());
         titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("SPEED RACER");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
         // Button panel
@@ -226,7 +245,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         JPanel instructionsPanel = new JPanel(new GridBagLayout());
         instructionsPanel.setBackground(Color.WHITE);
         JLabel instructionsLabel = new JLabel("<html><center>WASD to control your car<br/>Avoid " + MAX_COLLISIONS + " collisions to stay alive!<br/>Reach higher speeds for better scores</center></html>");
-        instructionsLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        instructionsLabel.setFont(eightBitSmall);
         instructionsPanel.add(instructionsLabel);
 
         add(titlePanel, BorderLayout.NORTH);
@@ -247,7 +266,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         JPanel titlePanel = new JPanel();
         titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("SETTINGS");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
         // Settings panel
@@ -298,18 +317,18 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         gbc.insets = new Insets(10, 10, 10, 10);
 
         JLabel gameOverLabel = new JLabel("GAME OVER!");
-        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        gameOverLabel.setFont(eightBit);
         gameOverLabel.setForeground(Color.RED);
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         gameOverPanel.add(gameOverLabel, gbc);
 
         JLabel collisionLabel = new JLabel("Collisions: " + collisionCount + "/" + MAX_COLLISIONS);
-        collisionLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        collisionLabel.setFont(eightBit);
         gbc.gridy = 1;
         gameOverPanel.add(collisionLabel, gbc);
 
         JLabel timeLabel = new JLabel("Survival Time: " + finalTime + " seconds");
-        timeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        timeLabel.setFont(eightBitLarge);
         gbc.gridy = 2;
         gameOverPanel.add(timeLabel, gbc);
 
@@ -510,7 +529,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         // Show collision warning
         if (showCollisionWarning && warningTimer > 0) {
             g2d.setColor(Color.RED);
-            g2d.setFont(new Font("Arial", Font.BOLD, 24));
+            g2d.setFont(eightBitLarge);
             String warningText = "COLLISION!";
             FontMetrics fm = g2d.getFontMetrics();
             int textWidth = fm.stringWidth(warningText);
@@ -523,7 +542,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
         // Show game stats
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.setFont(eightBitSmall);
         g2d.drawString("Speed: " + String.format("%.2f", speed), 10, 30);
         g2d.drawString("Collisions: " + collisionCount + "/" + MAX_COLLISIONS, 10, 50);
         int currentTime = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
