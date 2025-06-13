@@ -259,9 +259,11 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             g2d.drawString(collisionText, (width - textWidth) / 2, height / 2);
 
             String restartText = "Press R to restart";
+
             fm = g2d.getFontMetrics();
             textWidth = fm.stringWidth(restartText);
             g2d.drawString(restartText, (width - textWidth) / 2, height / 2 + 50);
+
             return;
         }
 
