@@ -25,7 +25,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     private static final double MIN_CAR_DISTANCE = 3.0;
     private static final double LANE_WIDTH = 0.6;
 
-    private static final int MAX_COLLISIONS = 20;
+    private static final int MAX_COLLISIONS = 10;
     private static final double COLLISION_DISTANCE = 3;
     private static final double COLLISION_LANE_WIDTH = 0.4;
 
@@ -224,28 +224,25 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         setLayout(new BorderLayout());
 
         // Title panel
-        JPanel titlePanel = new JPanel(new FlowLayout());
+        JPanel titlePanel = new JPanel(new GridBagLayout());
         titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("SPEED RACER");
         titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
-        // Button panel with BoxLayout
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+        // Button panel
+        JPanel buttonPanel = new JPanel(new GridBagLayout());
         buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
 
-        // Center align buttons
-        startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        settingsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        buttonPanel.add(startButton);
-        buttonPanel.add(Box.createVerticalStrut(10)); // 10px spacing
-        buttonPanel.add(settingsButton);
+        gbc.gridx = 0; gbc.gridy = 0;
+        buttonPanel.add(startButton, gbc);
+        gbc.gridy = 1;
+        buttonPanel.add(settingsButton, gbc);
 
         // Instructions panel
-        JPanel instructionsPanel = new JPanel(new FlowLayout());
+        JPanel instructionsPanel = new JPanel(new GridBagLayout());
         instructionsPanel.setBackground(Color.WHITE);
         JLabel instructionsLabel = new JLabel("<html><center>WASD to control your car<br/>Avoid " + MAX_COLLISIONS + " collisions to stay alive!<br/>Reach higher speeds for better scores</center></html>");
         instructionsLabel.setFont(eightBitSmall);
@@ -272,28 +269,29 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
-        // Settings panel with nested panels
+        // Settings panel with BoxLayout for vertical stacking
         JPanel settingsPanel = new JPanel();
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBackground(Color.WHITE);
-        settingsPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+        settingsPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
 
         // Max Speed setting row
-        JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel speedRow = new JPanel(new FlowLayout());
         speedRow.setBackground(Color.WHITE);
         speedRow.add(speedDownButton);
         speedRow.add(speedLabel);
         speedRow.add(speedUpButton);
+        settingsPanel.add(speedRow);
+
+        // Add some vertical spacing
+        settingsPanel.add(Box.createVerticalStrut(20));
 
         // Turn Speed setting row
-        JPanel turnSpeedRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel turnSpeedRow = new JPanel(new FlowLayout());
         turnSpeedRow.setBackground(Color.WHITE);
         turnSpeedRow.add(turnSpeedDownButton);
         turnSpeedRow.add(turnSpeedLabel);
         turnSpeedRow.add(turnSpeedUpButton);
-
-        settingsPanel.add(speedRow);
-        settingsPanel.add(Box.createVerticalStrut(20)); // 20px spacing
         settingsPanel.add(turnSpeedRow);
 
         // Back button panel
@@ -310,6 +308,51 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         requestFocusInWindow();
     }
 
+    private void setupGameOverScreen() {
+        currentState = GAME_OVER;
+        removeAll();
+        setLayout(new BorderLayout());
+
+        // Game Over panel with BoxLayout for vertical stacking
+        JPanel gameOverPanel = new JPanel();
+        gameOverPanel.setLayout(new BoxLayout(gameOverPanel, BoxLayout.Y_AXIS));
+        gameOverPanel.setBackground(Color.WHITE);
+        gameOverPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Center-align all components
+        JLabel gameOverLabel = new JLabel("GAME OVER!");
+        gameOverLabel.setFont(eightBit);
+        gameOverLabel.setForeground(Color.RED);
+        gameOverLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gameOverPanel.add(gameOverLabel);
+
+        gameOverPanel.add(Box.createVerticalStrut(10));
+
+        JLabel collisionLabel = new JLabel("Collisions: " + collisionCount + "/" + MAX_COLLISIONS);
+        collisionLabel.setFont(eightBit);
+        collisionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gameOverPanel.add(collisionLabel);
+
+        gameOverPanel.add(Box.createVerticalStrut(10));
+
+        JLabel timeLabel = new JLabel("Survival Time: " + finalTime + " seconds");
+        timeLabel.setFont(eightBitLarge);
+        timeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gameOverPanel.add(timeLabel);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(restartButton);
+        buttonPanel.add(mainMenuButton);
+
+        add(gameOverPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
+        requestFocusInWindow();
+    }
     private void startNewGame() {
         currentState = PLAYING;
         removeAll(); // Remove UI components for game screen
@@ -424,7 +467,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
                     if (collisionCount >= MAX_COLLISIONS) {
                         finalTime = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
-                        SwingUtilities.invokeLater(() -> setupGameOverScreen());
+                        setupGameOverScreen();
                     }
                     collisionHandled = true;
                 }
@@ -640,13 +683,13 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
         // Handle game controls only during gameplay
         if (currentState == PLAYING) {
-            if (keyCode == 87) { // W
+            if (keyCode == 87) {
                 wPressed = true;
-            } else if (keyCode == 83) { // S
+            } else if (keyCode == 83) {
                 sPressed = true;
-            } else if (keyCode == 65) { // A
+            } else if (keyCode == 65) {
                 aPressed = true;
-            } else if (keyCode == 68) { // D
+            } else if (keyCode == 68) {
                 dPressed = true;
             }
         }
@@ -661,12 +704,12 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         }
 
 // Handle restart from game over screen
-        if (keyCode == 82 && currentState == GAME_OVER) { // R
+        if (keyCode == 82 && currentState == GAME_OVER) {
             startNewGame();
         }
 
 // Handle enter key for start screen
-        if (keyCode == 10 && currentState == START_SCREEN) { // ENTER
+        if (keyCode == 10 && currentState == START_SCREEN) {
             startNewGame();
         }
 
@@ -675,13 +718,13 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        if (keyCode == 87) { // W
+        if (keyCode == 87) {
             wPressed = false;
-        } else if (keyCode == 83) { // S
+        } else if (keyCode == 83) {
             sPressed = false;
-        } else if (keyCode == 65) { // A
+        } else if (keyCode == 65) {
             aPressed = false;
-        } else if (keyCode == 68) { // D
+        } else if (keyCode == 68) {
             dPressed = false;
         }
     }
