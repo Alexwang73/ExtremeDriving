@@ -224,25 +224,28 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         setLayout(new BorderLayout());
 
         // Title panel
-        JPanel titlePanel = new JPanel(new GridBagLayout());
+        JPanel titlePanel = new JPanel(new FlowLayout());
         titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("SPEED RACER");
         titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
-        // Button panel
-        JPanel buttonPanel = new JPanel(new GridBagLayout());
+        // Button panel with BoxLayout
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
         buttonPanel.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        buttonPanel.add(startButton, gbc);
-        gbc.gridy = 1;
-        buttonPanel.add(settingsButton, gbc);
+        // Center align buttons
+        startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        settingsButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        buttonPanel.add(startButton);
+        buttonPanel.add(Box.createVerticalStrut(10)); // 10px spacing
+        buttonPanel.add(settingsButton);
 
         // Instructions panel
-        JPanel instructionsPanel = new JPanel(new GridBagLayout());
+        JPanel instructionsPanel = new JPanel(new FlowLayout());
         instructionsPanel.setBackground(Color.WHITE);
         JLabel instructionsLabel = new JLabel("<html><center>WASD to control your car<br/>Avoid " + MAX_COLLISIONS + " collisions to stay alive!<br/>Reach higher speeds for better scores</center></html>");
         instructionsLabel.setFont(eightBitSmall);
@@ -269,27 +272,29 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         titleLabel.setFont(eightBitLarge);
         titlePanel.add(titleLabel);
 
-        // Settings panel
-        JPanel settingsPanel = new JPanel(new GridBagLayout());
+        // Settings panel with nested panels
+        JPanel settingsPanel = new JPanel();
+        settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(20, 10, 20, 10);
+        settingsPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
 
-        // Max Speed setting
-        gbc.gridx = 0; gbc.gridy = 0;
-        settingsPanel.add(speedDownButton, gbc);
-        gbc.gridx = 1;
-        settingsPanel.add(speedLabel, gbc);
-        gbc.gridx = 2;
-        settingsPanel.add(speedUpButton, gbc);
+        // Max Speed setting row
+        JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        speedRow.setBackground(Color.WHITE);
+        speedRow.add(speedDownButton);
+        speedRow.add(speedLabel);
+        speedRow.add(speedUpButton);
 
-        // Turn Speed setting
-        gbc.gridx = 0; gbc.gridy = 1;
-        settingsPanel.add(turnSpeedDownButton, gbc);
-        gbc.gridx = 1;
-        settingsPanel.add(turnSpeedLabel, gbc);
-        gbc.gridx = 2;
-        settingsPanel.add(turnSpeedUpButton, gbc);
+        // Turn Speed setting row
+        JPanel turnSpeedRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        turnSpeedRow.setBackground(Color.WHITE);
+        turnSpeedRow.add(turnSpeedDownButton);
+        turnSpeedRow.add(turnSpeedLabel);
+        turnSpeedRow.add(turnSpeedUpButton);
+
+        settingsPanel.add(speedRow);
+        settingsPanel.add(Box.createVerticalStrut(20)); // 20px spacing
+        settingsPanel.add(turnSpeedRow);
 
         // Back button panel
         JPanel backPanel = new JPanel();
@@ -299,47 +304,6 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         add(titlePanel, BorderLayout.NORTH);
         add(settingsPanel, BorderLayout.CENTER);
         add(backPanel, BorderLayout.SOUTH);
-
-        revalidate();
-        repaint();
-        requestFocusInWindow();
-    }
-
-    private void setupGameOverScreen() {
-        currentState = GAME_OVER;
-        removeAll();
-        setLayout(new BorderLayout());
-
-        // Game Over panel
-        JPanel gameOverPanel = new JPanel(new GridBagLayout());
-        gameOverPanel.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-
-        JLabel gameOverLabel = new JLabel("GAME OVER!");
-        gameOverLabel.setFont(eightBit);
-        gameOverLabel.setForeground(Color.RED);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        gameOverPanel.add(gameOverLabel, gbc);
-
-        JLabel collisionLabel = new JLabel("Collisions: " + collisionCount + "/" + MAX_COLLISIONS);
-        collisionLabel.setFont(eightBit);
-        gbc.gridy = 1;
-        gameOverPanel.add(collisionLabel, gbc);
-
-        JLabel timeLabel = new JLabel("Survival Time: " + finalTime + " seconds");
-        timeLabel.setFont(eightBitLarge);
-        gbc.gridy = 2;
-        gameOverPanel.add(timeLabel, gbc);
-
-        // Button panel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(restartButton);
-        buttonPanel.add(mainMenuButton);
-
-        add(gameOverPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
 
         revalidate();
         repaint();
