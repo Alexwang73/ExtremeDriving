@@ -18,20 +18,49 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     private static final double MIN_CAR_DISTANCE = 3.0;
     private static final double LANE_WIDTH = 0.6;
 
-    // Collision detection constants
     private static final int MAX_COLLISIONS = 20;
-    private static final double COLLISION_DISTANCE = 2.0; // Distance threshold for collision
-    private static final double COLLISION_LANE_WIDTH = 0.4; // Lane width for collision detection
+    private static final double COLLISION_DISTANCE = 3;
+    private static final double COLLISION_LANE_WIDTH = 0.4;
+
+    // Game state constants
+    private static final int START_SCREEN = 0;
+    private static final int SETTINGS_SCREEN = 1;
+    private static final int PLAYING = 2;
+    private static final int GAME_OVER = 3;
+
+    private int currentState = START_SCREEN;
 
     // Game state variables
     private int collisionCount = 0;
     private int totalScore = 0;
-    private boolean gameOver = false;
+    private long gameStartTime = 0;
+    private int finalTime = 0;
     private boolean showCollisionWarning = false;
     private int warningTimer = 0;
-    private List<Car> recentlyCollidedCars = new ArrayList<>(); // To prevent multiple collisions with same car
+    private List<Car> recentlyCollidedCars = new ArrayList<>();
 
-    // Colors
+    // Settings variables
+    private double maxSpeed = 1.0; // Default MAX_SPEED
+    private double carMoveSpeed = 8.0; // Default CAR_MOVE_SPEED
+    private static final double MIN_MAX_SPEED = 0.5;
+    private static final double MAX_MAX_SPEED = 2.0;
+    private static final double MIN_CAR_MOVE_SPEED = 4.0;
+    private static final double MAX_CAR_MOVE_SPEED = 16.0;
+
+    // UI Components
+    private JButton startButton;
+    private JButton settingsButton;
+    private JButton backButton;
+    private JButton restartButton;
+    private JButton mainMenuButton;
+    private JButton speedUpButton;
+    private JButton speedDownButton;
+    private JButton turnSpeedUpButton;
+    private JButton turnSpeedDownButton;
+    private JLabel speedLabel;
+    private JLabel turnSpeedLabel;
+
+    // Colors for game rendering only
     private final Color GRASS_COLOR = new Color(16, 200, 16);
     private final Color ROAD_DARK = new Color(105, 105, 105);
     private final Color ROAD_LIGHT = new Color(169, 169, 169);
@@ -53,12 +82,10 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     private double position = 0.0;
     private double speed = 0.3;
     private static final double MIN_SPEED = 0.05;
-    private static final double MAX_SPEED = 1.0;
     private static final double SPEED_INCREMENT = 0.003;
     private static final double BRAKE_INCREMENT = 0.004;
     private static final double NATURAL_DECELERATION = 0.001;
 
-    private static final double CAR_MOVE_SPEED = 8.0;
     private static final double CAR_MIN_X = 150;
     private static final double CAR_MAX_X = 430;
 
@@ -85,10 +112,238 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         }
 
         playerCar = new Car(car, 290, 465, 0);
-        spawnInitialNPCCars();
 
         addKeyListener(this);
         setFocusable(true);
+        requestFocusInWindow();
+
+        initializeButtons();
+        setupStartScreen();
+    }
+
+    private void initializeButtons() {
+        // Start screen buttons
+        startButton = new JButton("START GAME");
+        settingsButton = new JButton("SETTINGS");
+
+        // Settings screen buttons
+        backButton = new JButton("BACK");
+        speedUpButton = new JButton("+");
+        speedDownButton = new JButton("-");
+        turnSpeedUpButton = new JButton("+");
+        turnSpeedDownButton = new JButton("-");
+        speedLabel = new JLabel("Max Speed: " + String.format("%.1f", maxSpeed));
+        turnSpeedLabel = new JLabel("Turn Speed: " + String.format("%.1f", carMoveSpeed));
+
+        // Game over screen buttons
+        restartButton = new JButton("RESTART");
+        mainMenuButton = new JButton("MAIN MENU");
+
+        // Add action listeners
+        startButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                startNewGame();
+            }
+        });
+
+        settingsButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setupSettingsScreen();
+            }
+        });
+
+        backButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setupStartScreen();
+            }
+        });
+
+        restartButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                startNewGame();
+            }
+        });
+
+        mainMenuButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                setupStartScreen();
+            }
+        });
+
+        speedUpButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                maxSpeed = Math.min(maxSpeed + 0.1, MAX_MAX_SPEED);
+                speedLabel.setText("Max Speed: " + String.format("%.1f", maxSpeed));
+            }
+        });
+
+        speedDownButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                maxSpeed = Math.max(maxSpeed - 0.1, MIN_MAX_SPEED);
+                speedLabel.setText("Max Speed: " + String.format("%.1f", maxSpeed));
+            }
+        });
+
+        turnSpeedUpButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                carMoveSpeed = Math.min(carMoveSpeed + 1.0, MAX_CAR_MOVE_SPEED);
+                turnSpeedLabel.setText("Turn Speed: " + String.format("%.1f", carMoveSpeed));
+            }
+        });
+
+        turnSpeedDownButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                carMoveSpeed = Math.max(carMoveSpeed - 1.0, MIN_CAR_MOVE_SPEED);
+                turnSpeedLabel.setText("Turn Speed: " + String.format("%.1f", carMoveSpeed));
+            }
+        });
+    }
+
+    private void setupStartScreen() {
+        currentState = START_SCREEN;
+        removeAll();
+        setLayout(new BorderLayout());
+
+        // Title panel
+        JPanel titlePanel = new JPanel(new GridBagLayout());
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("SPEED RACER");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        titlePanel.add(titleLabel);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new GridBagLayout());
+        buttonPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        buttonPanel.add(startButton, gbc);
+        gbc.gridy = 1;
+        buttonPanel.add(settingsButton, gbc);
+
+        // Instructions panel
+        JPanel instructionsPanel = new JPanel(new GridBagLayout());
+        instructionsPanel.setBackground(Color.WHITE);
+        JLabel instructionsLabel = new JLabel("<html><center>WASD to control your car<br/>Avoid " + MAX_COLLISIONS + " collisions to stay alive!<br/>Reach higher speeds for better scores</center></html>");
+        instructionsLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        instructionsPanel.add(instructionsLabel);
+
+        add(titlePanel, BorderLayout.NORTH);
+        add(buttonPanel, BorderLayout.CENTER);
+        add(instructionsPanel, BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
+        requestFocusInWindow();
+    }
+
+    private void setupSettingsScreen() {
+        currentState = SETTINGS_SCREEN;
+        removeAll();
+        setLayout(new BorderLayout());
+
+        // Title
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("SETTINGS");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        titlePanel.add(titleLabel);
+
+        // Settings panel
+        JPanel settingsPanel = new JPanel(new GridBagLayout());
+        settingsPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 10, 20, 10);
+
+        // Max Speed setting
+        gbc.gridx = 0; gbc.gridy = 0;
+        settingsPanel.add(speedDownButton, gbc);
+        gbc.gridx = 1;
+        settingsPanel.add(speedLabel, gbc);
+        gbc.gridx = 2;
+        settingsPanel.add(speedUpButton, gbc);
+
+        // Turn Speed setting
+        gbc.gridx = 0; gbc.gridy = 1;
+        settingsPanel.add(turnSpeedDownButton, gbc);
+        gbc.gridx = 1;
+        settingsPanel.add(turnSpeedLabel, gbc);
+        gbc.gridx = 2;
+        settingsPanel.add(turnSpeedUpButton, gbc);
+
+        // Back button panel
+        JPanel backPanel = new JPanel();
+        backPanel.setBackground(Color.WHITE);
+        backPanel.add(backButton);
+
+        add(titlePanel, BorderLayout.NORTH);
+        add(settingsPanel, BorderLayout.CENTER);
+        add(backPanel, BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
+        requestFocusInWindow();
+    }
+
+    private void setupGameOverScreen() {
+        currentState = GAME_OVER;
+        removeAll();
+        setLayout(new BorderLayout());
+
+        // Game Over panel
+        JPanel gameOverPanel = new JPanel(new GridBagLayout());
+        gameOverPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+
+        JLabel gameOverLabel = new JLabel("GAME OVER!");
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        gameOverLabel.setForeground(Color.RED);
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        gameOverPanel.add(gameOverLabel, gbc);
+
+        JLabel collisionLabel = new JLabel("Collisions: " + collisionCount + "/" + MAX_COLLISIONS);
+        collisionLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        gbc.gridy = 1;
+        gameOverPanel.add(collisionLabel, gbc);
+
+        JLabel timeLabel = new JLabel("Survival Time: " + finalTime + " seconds");
+        timeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        gbc.gridy = 2;
+        gameOverPanel.add(timeLabel, gbc);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(restartButton);
+        buttonPanel.add(mainMenuButton);
+
+        add(gameOverPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        revalidate();
+        repaint();
+        requestFocusInWindow();
+    }
+
+    private void startNewGame() {
+        currentState = PLAYING;
+        removeAll(); // Remove UI components for game screen
+
+        collisionCount = 0;
+        showCollisionWarning = false;
+        warningTimer = 0;
+        recentlyCollidedCars.clear();
+        npcCars.clear();
+        position = 0.0;
+        speed = 0.3;
+        playerCar.setxCoord(290);
+        gameStartTime = System.currentTimeMillis();
+        spawnInitialNPCCars();
+
+        revalidate();
+        repaint();
         requestFocusInWindow();
     }
 
@@ -102,7 +357,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             }
 
             double roadPos = 20 + i * 8;
-            double lane = (random.nextDouble() - 0.5) * 1.2;
+            double lane = (random.nextDouble() - 0.6) * 1.2;
             double npcSpeed = 0.7 + random.nextDouble() * 0.3;
 
             Car npcCar = new Car(npcImage, 0, 0, roadPos, lane, npcSpeed);
@@ -138,41 +393,58 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         return false;
     }
 
-    // Convert player car screen position to road coordinates for collision detection
     private double getPlayerLaneOffset() {
-        // Convert player's screen X position to lane offset
         int roadCenterX = getWidth() / 2;
-        int roadWidth = (int)(ROAD_WIDTH * 1.0); // At player's depth (near road)
+        int roadWidth = (int)(ROAD_WIDTH);
         return (double)(playerCar.getxCoord() + car.getWidth()/2 - roadCenterX) / (roadWidth * 0.3);
     }
 
     private void checkPlayerCollisions() {
-        if (gameOver) return;
+        if (currentState != PLAYING) {
+            return;
+        }
 
         double playerLaneOffset = getPlayerLaneOffset();
-        double playerRoadPosition = 0; // Player is always at position 0
+        double playerRoadPosition = 0;
 
-        // Clean up recently collided cars list
-        recentlyCollidedCars.removeIf(car -> car.getRoadPosition() < -5 || car.getRoadPosition() > 5);
+        List<Car> updatedList = new ArrayList<Car>();
+        for (int i = 0; i < recentlyCollidedCars.size(); i++) {
+            Car car = recentlyCollidedCars.get(i);
+            double pos = car.getRoadPosition();
+            if (pos >= -5 && pos <= 5) {
+                updatedList.add(car);
+            }
+        }
+        recentlyCollidedCars = updatedList;
 
-        for (Car npc : npcCars) {
-            // Skip if we recently collided with this car
-            if (recentlyCollidedCars.contains(npc)) continue;
+        boolean collisionHandled = false;
 
-            double roadDistance = Math.abs(npc.getRoadPosition() - playerRoadPosition);
-            double laneDistance = Math.abs(npc.getLaneOffset() - playerLaneOffset);
+        for (int i = 0; i < npcCars.size(); i++) {
+            Car npc = npcCars.get(i);
 
-            // Check if collision occurred
-            if (roadDistance < COLLISION_DISTANCE && laneDistance < COLLISION_LANE_WIDTH) {
-                collisionCount++;
-                recentlyCollidedCars.add(npc);
-                showCollisionWarning = true;
-                warningTimer = 60; // Show warning for 60 frames (about 1 second)
-
-                if (collisionCount >= MAX_COLLISIONS) {
-                    gameOver = true;
+            boolean alreadyCollided = false;
+            for (int j = 0; j < recentlyCollidedCars.size(); j++) {
+                if (recentlyCollidedCars.get(j) == npc) {
+                    alreadyCollided = true;
                 }
-                break; // Only count one collision per frame
+            }
+
+            if (!alreadyCollided && !collisionHandled) {
+                double roadDistance = Math.abs(npc.getRoadPosition() - playerRoadPosition);
+                double laneDistance = Math.abs(npc.getLaneOffset() - playerLaneOffset);
+
+                if (roadDistance < COLLISION_DISTANCE && laneDistance < COLLISION_LANE_WIDTH) {
+                    collisionCount++;
+                    recentlyCollidedCars.add(npc);
+                    showCollisionWarning = true;
+                    warningTimer = 60;
+
+                    if (collisionCount >= MAX_COLLISIONS) {
+                        finalTime = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
+                        SwingUtilities.invokeLater(() -> setupGameOverScreen());
+                    }
+                    collisionHandled = true;
+                }
             }
         }
     }
@@ -186,7 +458,7 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
             if (npc.getRoadPosition() < -2) {
                 npcCars.remove(i);
-                recentlyCollidedCars.remove(npc); // Clean up reference
+                recentlyCollidedCars.remove(npc);
             }
         }
 
@@ -210,22 +482,16 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    private void resetGame() {
-        collisionCount = 0;
-        gameOver = false;
-        showCollisionWarning = false;
-        warningTimer = 0;
-        recentlyCollidedCars.clear();
-        npcCars.clear();
-        position = 0.0;
-        speed = 0.3;
-        playerCar.setxCoord(290);
-        spawnInitialNPCCars();
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
+        if (currentState == PLAYING) {
+            drawGameScreen(g);
+        }
+    }
+
+    private void drawGameScreen(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         int width = getWidth();
         int height = getHeight();
@@ -233,37 +499,13 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         // Draw sky and background
         g2d.setColor(SKY_COLOR);
         g2d.fillRect(0, 0, width, height);
-        g2d.drawImage(background1, 50, 0, null);
+        if (background1 != null) {
+            g2d.drawImage(background1, 50, 0, null);
+        }
 
         // Draw ground/grass
         g2d.setColor(GRASS_COLOR);
         g2d.fillRect(0, (height / 2) + 11, width, height / 2);
-
-        // Game over screen
-        if (gameOver) {
-            g2d.setColor(new Color(0, 0, 0, 128)); // Semi-transparent overlay
-            g2d.fillRect(0, 0, width, height);
-
-            g2d.setColor(Color.RED);
-            g2d.setFont(new Font("Arial", Font.BOLD, 48));
-            String gameOverText = "GAME OVER!";
-            FontMetrics fm = g2d.getFontMetrics();
-            int textWidth = fm.stringWidth(gameOverText);
-            g2d.drawString(gameOverText, (width - textWidth) / 2, height / 2 - 50);
-
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 24));
-            String collisionText = "Too many collisions: " + collisionCount + "/" + MAX_COLLISIONS;
-            fm = g2d.getFontMetrics();
-            textWidth = fm.stringWidth(collisionText);
-            g2d.drawString(collisionText, (width - textWidth) / 2, height / 2);
-
-            String restartText = "Press R to restart";
-            fm = g2d.getFontMetrics();
-            textWidth = fm.stringWidth(restartText);
-            g2d.drawString(restartText, (width - textWidth) / 2, height / 2 + 50);
-            return;
-        }
 
         // Show collision warning
         if (showCollisionWarning && warningTimer > 0) {
@@ -284,9 +526,10 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         g2d.setFont(new Font("Arial", Font.BOLD, 16));
         g2d.drawString("Speed: " + String.format("%.2f", speed), 10, 30);
         g2d.drawString("Collisions: " + collisionCount + "/" + MAX_COLLISIONS, 10, 50);
-        g2d.drawString("W: Speed Up, S: Slow Down", 10, 70);
-        g2d.drawString("A: Move Left, D: Move Right", 10, 90);
-        g2d.drawString("NPC Cars: " + npcCars.size(), 10, 110);
+        int currentTime = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
+        g2d.drawString("Time: " + currentTime + "s", 10, 70);
+        g2d.drawString("W: Speed Up, S: Slow Down", 10, 90);
+        g2d.drawString("A: Move Left, D: Move Right", 10, 110);
 
         int roadCenterX = width / 2;
         int horizonY = height / 2;
@@ -296,20 +539,10 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             double segmentIndex = i + (position % 3);
 
             double depth1 = (double) i / NUM_SEGMENTS;
-            double scale1;
-            if (1.0 - depth1 * 0.7 > 0.01) {
-                scale1 = 1.0 - depth1 * 0.7;
-            } else {
-                scale1 = 0.01;
-            }
+            double scale1 = Math.max(1.0 - depth1 * 0.7, 0.01);
 
             double depth2 = (double) (i + 1) / NUM_SEGMENTS;
-            double scale2;
-            if (1.0 - depth2 * 0.7 > 0.01) {
-                scale2 = 1.0 - depth2 * 0.7;
-            } else {
-                scale2 = 0.01;
-            }
+            double scale2 = Math.max(1.0 - depth2 * 0.7, 0.01);
 
             int y1 = (int) (horizonY + (1 - depth1) * (height - horizonY));
             int y2 = (int) (horizonY + (1 - depth2) * (height - horizonY));
@@ -321,19 +554,8 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
             int rumbleWidth2 = (int) (roadWidth2 * 1.2);
 
             boolean isEven = ((int) (segmentIndex / 3)) % 2 == 0;
-            Color roadColor;
-            if (isEven) {
-                roadColor = ROAD_LIGHT;
-            } else {
-                roadColor = ROAD_DARK;
-            }
-
-            Color rumbleColor;
-            if (isEven) {
-                rumbleColor = RUMBLE_WHITE;
-            } else {
-                rumbleColor = RUMBLE_RED;
-            }
+            Color roadColor = isEven ? ROAD_LIGHT : ROAD_DARK;
+            Color rumbleColor = isEven ? RUMBLE_WHITE : RUMBLE_RED;
 
             drawTrapezoid(g2d, rumbleColor,
                     roadCenterX - rumbleWidth1 / 2, y1, rumbleWidth1,
@@ -344,19 +566,8 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
                     roadCenterX - roadWidth2 / 2, y2, roadWidth2);
 
             if (isEven && scale1 > 0.1) {
-                int lineWidth1;
-                if (roadWidth1 * 0.05 > 1) {
-                    lineWidth1 = (int) (roadWidth1 * 0.05);
-                } else {
-                    lineWidth1 = 1;
-                }
-
-                int lineWidth2;
-                if (roadWidth2 * 0.05 > 1) {
-                    lineWidth2 = (int) (roadWidth2 * 0.05);
-                } else {
-                    lineWidth2 = 1;
-                }
+                int lineWidth1 = Math.max((int) (roadWidth1 * 0.05), 1);
+                int lineWidth2 = Math.max((int) (roadWidth2 * 0.05), 1);
 
                 drawTrapezoid(g2d, LINE_WHITE,
                         roadCenterX - lineWidth1 / 2, y1, lineWidth1,
@@ -365,7 +576,9 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
         }
 
         drawNPCCars(g2d, width, height, roadCenterX, horizonY);
-        g2d.drawImage(car, playerCar.getxCoord(), playerCar.getyCoord(), null);
+        if (car != null) {
+            g2d.drawImage(car, playerCar.getxCoord(), playerCar.getyCoord(), null);
+        }
     }
 
     private void drawNPCCars(Graphics2D g2d, int width, int height, int roadCenterX, int horizonY) {
@@ -374,26 +587,23 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
 
             if (depth < 0 || depth > 1) continue;
 
-            double scale;
-            if (1.0 - depth * 0.7 > 0.01) {
-                scale = 1.0 - depth * 0.7;
-            } else {
-                scale = 0.01;
-            }
+            double scale = Math.max(1.0 - depth * 0.7, 0.01);
 
             int y = (int) (horizonY + (1 - depth) * (height - horizonY));
             int roadWidth = (int) (ROAD_WIDTH * scale);
             int carX = (int) (roadCenterX + (npc.getLaneOffset() * roadWidth * 0.3));
 
             BufferedImage carImage = npc.getImage();
-            int carWidth = (int) (carImage.getWidth() * scale);
-            int carHeight = (int) (carImage.getHeight() * scale);
+            if (carImage != null) {
+                int carWidth = (int) (carImage.getWidth() * scale);
+                int carHeight = (int) (carImage.getHeight() * scale);
 
-            carX -= carWidth / 2;
-            y -= carHeight;
+                carX -= carWidth / 2;
+                y -= carHeight;
 
-            if (scale > 0.1 && y > horizonY) {
-                g2d.drawImage(carImage, carX, y, carWidth, carHeight, null);
+                if (scale > 0.1 && y > horizonY) {
+                    g2d.drawImage(carImage, carX, y, carWidth, carHeight, null);
+                }
             }
         }
     }
@@ -406,53 +616,29 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private void updatePosition() {
-        if (gameOver) return; // Don't update if game is over
+        if (currentState != PLAYING) return;
 
-        // Speed logic
+        // Speed logic using the configurable maxSpeed
         if (wPressed && sPressed) {
-            if (speed - NATURAL_DECELERATION > MIN_SPEED) {
-                speed = speed - NATURAL_DECELERATION;
-            } else {
-                speed = MIN_SPEED;
-            }
+            speed = Math.max(speed - NATURAL_DECELERATION, MIN_SPEED);
         } else if (wPressed) {
-            if (speed + SPEED_INCREMENT < MAX_SPEED) {
-                speed = speed + SPEED_INCREMENT;
-            } else {
-                speed = MAX_SPEED;
-            }
+            speed = Math.min(speed + SPEED_INCREMENT, maxSpeed);
         } else if (sPressed) {
-            if (speed - BRAKE_INCREMENT > MIN_SPEED) {
-                speed = speed - BRAKE_INCREMENT;
-            } else {
-                speed = MIN_SPEED;
-            }
+            speed = Math.max(speed - BRAKE_INCREMENT, MIN_SPEED);
         } else {
-            if (speed - NATURAL_DECELERATION > MIN_SPEED) {
-                speed = speed - NATURAL_DECELERATION;
-            } else {
-                speed = MIN_SPEED;
-            }
+            speed = Math.max(speed - NATURAL_DECELERATION, MIN_SPEED);
         }
 
-        // Horizontal movement
+        // Horizontal movement using configurable carMoveSpeed
         int currentX = playerCar.getxCoord();
         if (aPressed && !dPressed) {
-            if (currentX - CAR_MOVE_SPEED > CAR_MIN_X) {
-                playerCar.setxCoord((int) (currentX - CAR_MOVE_SPEED));
-            } else {
-                playerCar.setxCoord((int) CAR_MIN_X);
-            }
+            playerCar.setxCoord((int) Math.max(currentX - carMoveSpeed, CAR_MIN_X));
         } else if (dPressed && !aPressed) {
-            if (currentX + CAR_MOVE_SPEED < CAR_MAX_X) {
-                playerCar.setxCoord((int) (currentX + CAR_MOVE_SPEED));
-            } else {
-                playerCar.setxCoord((int) CAR_MAX_X);
-            }
+            playerCar.setxCoord((int) Math.min(currentX + carMoveSpeed, CAR_MAX_X));
         }
 
         updateNPCCars();
-        checkPlayerCollisions(); // Check for collisions each frame
+        checkPlayerCollisions();
         position += speed;
         repaint();
     }
@@ -468,23 +654,41 @@ public class RoadPanel extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        if (keyCode == 87) {
-            wPressed = true;
-        } else if (keyCode == 83) {
-            sPressed = true;
-        } else if (keyCode == 65) {
-            aPressed = true;
-        } else if (keyCode == 68) {
-            dPressed = true;
-        } else if (keyCode == 82 && gameOver) {
-            resetGame();
+
+        if (currentState == PLAYING) {
+            if (keyCode == 87) {
+                wPressed = true;
+            } else if (keyCode == 83) {
+                sPressed = true;
+            } else if (keyCode == 65) {
+                aPressed = true;
+            } else if (keyCode == 68) {
+                dPressed = true;
+            }
+        }
+
+
+        if (keyCode == 27) { // ESCAPE
+            if (currentState == PLAYING) {
+                setupStartScreen();
+            } else if (currentState == SETTINGS_SCREEN) {
+                setupStartScreen();
+            }
+        }
+
+        if (keyCode == 82 && currentState == GAME_OVER) {
+            startNewGame();
+        }
+
+        if (keyCode == 10 && currentState == START_SCREEN) {
+            startNewGame();
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        if (keyCode == 87) { // W
+        if (keyCode == 87) {
             wPressed = false;
         } else if (keyCode == 83) {
             sPressed = false;

@@ -7,18 +7,17 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Car {
-    protected BufferedImage image; // Changed from 'car' to 'image' for consistency
+    protected BufferedImage image;
     private int topSpeed;
     private int xCoord;
     private int yCoord;
     private int score;
 
     // Additional properties for 3D road simulation
-    private double roadPosition = 0; // Position along the road (0 = far away, higher = closer)
-    private double laneOffset = 0;   // -1 to 1, where 0 is center of road
-    private double speed = 1.0;      // Relative speed compared to player
+    private double roadPosition = 0;
+    private double laneOffset = 0;
+    private double speed = 1.0;
 
-    // Original constructors
     public Car(BufferedImage car, int xCoord, int yCoord, int score) {
         this.image = car;
         this.xCoord = xCoord;
@@ -26,7 +25,6 @@ public class Car {
         this.score = score;
     }
 
-    // New constructor for NPC cars
     public Car(BufferedImage car, int xCoord, int yCoord, double roadPosition, double laneOffset, double speed) {
         this.image = car;
         this.xCoord = xCoord;
@@ -68,7 +66,6 @@ public class Car {
         return new Rectangle(xCoord, yCoord, imageWidth, imageHeight);
     }
 
-    // New getters and setters for 3D road simulation
     public double getRoadPosition() {
         return roadPosition;
     }
